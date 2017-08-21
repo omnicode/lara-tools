@@ -10,7 +10,7 @@
     ],
     "require": {
         "laravel/framework": "~5.0",
-		"cakephp/utility": "~3.3"
+	"cakephp/utility": "~3.3"
     },
     "require-dev": {
         "mockery/mockery": "~0.9",
