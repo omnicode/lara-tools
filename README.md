@@ -4,11 +4,12 @@
 
 1. <a href="#LaraUtil">LaraUtil</a>
 	* <a href="#hasTable">hasTable</a>
-  * <a href="#hasColumn">hasColumn</a>
-  * <a href="#getFullColumns">getFullColumns</a>
-  * <a href="#hashPassword">hashPassword</a>
-  * <a href="#verifyPassword">verifyPassword</a>
-2. 
+  	* <a href="#hasColumn">hasColumn</a>
+  	* <a href="#getFullColumns">getFullColumns</a>
+  	* <a href="#hashPassword">hashPassword</a>
+  	* <a href="#verifyPassword">verifyPassword</a>
+2. <a href="#ModelExtrasTrait">ModelExtrasTrait</a>
+	* <a href="#saveAssocited">saveAssocited</a>
 
 
 ## <a id="LaraUtil"></a>LaraUtil
@@ -60,6 +61,27 @@ Verifies the password hashed by `hashPassword` method above - returns true or fa
 
 ```
 $passwordMatch = verifyPassword('plan text password', $hashedAndEcryptedPassword);
+```
+
+
+
+## <a id="ModelExtrasTrait"></a>ModelExtrasTrait
+
+ModelExtrasTrait is a trait to be used in Models - provides the following methods
+
+
+### <a id="saveAssociated"></a>saveAssociated
+
+`saveAssociated` method is a wrapper method, that allows to save `BelongsToMany` and `HasMany` related models in a single transaction, e.g. suppose we need to save a product with its related categories, we would use
+
+```
+Product::saveAssociated($data, ['associated' => 'categories']);
+```
+
+the `$data` should be an array like this
+
+```
+$data = ['name', 'price', 'categories_ids' => [1, 3, 7]]
 ```
 
 
