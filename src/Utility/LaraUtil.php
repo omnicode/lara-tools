@@ -56,6 +56,7 @@ class LaraUtil
      */
     public static function hasColumn($table, $column)
     {
+        $column = str_replace($table.'.', '', $column);
         $minutes = Config::get('lara_util.cache.time');
 
         // if all cache is disabled
