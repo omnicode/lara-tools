@@ -56,6 +56,7 @@ class LaraUtil
      */
     public static function hasColumn($table, $column)
     {
+        $column = str_replace($table.'.', '', $column);
         $minutes = Config::get('lara_util.cache.time');
 
         // if all cache is disabled
@@ -128,6 +129,7 @@ class LaraUtil
     public static function hashPassword($password)
     {
         // hash to remove initial bcrypt restriction
+        // @link https://security.stackexchange.com/a/6627/38200
         $password = hash('sha256', $password);
         $cost = Config::get('lara_util.security.password.cost');
         $hash = password_hash($password, PASSWORD_BCRYPT, ['cost' => $cost]);
