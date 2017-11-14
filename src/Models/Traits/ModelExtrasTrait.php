@@ -264,7 +264,7 @@ trait ModelExtrasTrait
         }
 
         if (!$hidden) {
-            $indexable[self::_Default] = Hash::extract($this->indexable[$group], '{n}[hidden=false]');
+            $indexable[$this->default] = Hash::extract($this->indexable[$group], '{n}[hidden=false]');
         }
 
         if ($full) {
