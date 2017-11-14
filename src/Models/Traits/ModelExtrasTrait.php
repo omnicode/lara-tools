@@ -217,7 +217,7 @@ trait ModelExtrasTrait
      * @param null $column - if provided checks whether provided column exists
      * @return array|bool
      */
-    public function getSortableTmp($column = null, $group = null)
+    public function getSortable($column = null, $group = null)
     {
         if (is_null($group)) {
             $group = $this->default;
