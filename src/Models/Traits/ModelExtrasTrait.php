@@ -256,7 +256,7 @@ trait ModelExtrasTrait
             $hidden = true;
         }
 
-        $this->validateIndexableTmp();
+        $this->validateIndexable();
         $indexable = $this->indexable;
 
         if (!in_array($group, array_keys($indexable))) {
