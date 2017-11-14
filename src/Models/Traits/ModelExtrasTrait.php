@@ -326,7 +326,7 @@ trait ModelExtrasTrait
 
 
             if (!array_key_exists('group', $val)) {
-                $groups[$this->default][] = $val;
+                $groups[$this->general][] = $val;
                 $val['group'] = $allGroups;
             }
 
