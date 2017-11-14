@@ -10,6 +10,9 @@ use LaraTools\Utility\LaraUtil;
 trait ModelExtrasTrait
 {
 
+    protected $general = '_general';
+    protected $default = 'list';
+
     protected $statusColumn = 'status';
 
 
@@ -214,11 +217,14 @@ trait ModelExtrasTrait
      * @param null $column - if provided checks whether provided column exists
      * @return array|bool
      */
-    public function getSortable($column = null)
+    public function getSortableTmp($column = null, $group = null)
     {
-        $indexable = $this->getIndexable(true);
-        $sortable = Hash::extract($indexable['list'], '{n}[sortable=1].name');
+        if (is_null($group)) {
+            $group = $this->default;
+        }
 
+        $indexable = $this->getIndexable(true);
+        $sortable = Hash::extract($indexable[$group], '{n}[sortable=1].name');
         if ($column) {
             return in_array($column, $sortable);
         }
@@ -232,10 +238,16 @@ trait ModelExtrasTrait
      * @param bool|false $hidden - if true hidden columns will be returned
      *      hidden column are not shown on the view
      * @param bool|false $full - whether to return list of columns or the full array
-     * @return array|mixed
+     * @param $group
+     * @return array
+     * @throws \Exception
      */
-    public function getIndexable($full = null, $hidden = null)
+    public function getIndexable($full = null, $hidden = null, $group = null)
     {
+        if (is_null($group)) {
+            $group = $this->default;
+        }
+
         if ($full === null) {
             $full = false;
         }
@@ -244,18 +256,22 @@ trait ModelExtrasTrait
             $hidden = true;
         }
 
-        $this->validateIndexable();
+        $this->validateIndexableTmp();
         $indexable = $this->indexable;
 
+        if (!in_array($group, array_keys($indexable))) {
+            throw new \Exception(sprintf('this "%s" group does not defined in indexable columns', $group));
+        }
+
         if (!$hidden) {
-            $indexable['list'] = Hash::extract($this->indexable['list'], '{n}[hidden=0]');
+            $indexable[self::_Default] = Hash::extract($this->indexable[$group], '{n}[hidden=false]');
         }
 
         if ($full) {
             return $indexable;
         }
 
-        return array_merge([$indexable['primary_key']], Hash::extract($indexable['list'], '{n}[virtual!=1].name'));
+        return array_merge([$indexable['primary_key']], Hash::extract($indexable[$group], '{n}[virtual!=true].name'));
     }
 
     /**
@@ -272,12 +288,13 @@ trait ModelExtrasTrait
             return true;
         }
 
+        $groups[$this->general] = [];
+        $allGroups = [$this->default];
         // set default values
-        array_walk($this->indexable, function (&$val) {
+        array_walk($this->indexable, function (&$val) use (&$groups, &$allGroups) {
             if (!array_key_exists('name', $val)) {
                 throw new \Exception('For listable columns name parameter is required');
             }
-
             if (!array_key_exists('hidden', $val)) {
                 $val['hidden'] = false;
             }
@@ -306,13 +323,44 @@ trait ModelExtrasTrait
 
                 $val['name'] = DB::raw($val['name']);
             }
+
+
+            if (!array_key_exists('group', $val)) {
+                $groups[$this->default][] = $val;
+                $val['group'] = $allGroups;
+            }
+
+            $valGroup = array_pull($val, 'group');
+
+            if (!is_array($valGroup)) {
+                $valGroup = [$valGroup];
+            }
+
+            foreach ($valGroup as $group) {
+                if (!in_array($group, $allGroups)) {
+                    $allGroups[] = $group;
+                }
+            }
+
+            foreach ($allGroups as $group) {
+                if(in_array($group, $valGroup)) {
+                    if (empty($groups[$group]) && $groups[$this->general] != [$val]) {
+                        $groups[$group] = $groups[$this->general];
+                    }
+
+                    $groups[$group][] = $val;
+                }
+            }
         });
+
+        unset($groups[$this->general]);
 
         // @TODO - table without PK ? list with another col ?
         $this->indexable = [
             'primary_key' => $this->getKeyName(),
-            'list' => $this->indexable
+            'table' => $this->getTable(),
         ];
+        $this->indexable = array_merge($this->indexable, $groups);
     }
 
     /**
