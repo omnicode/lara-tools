@@ -3,18 +3,27 @@ namespace LaraTools\Models\Traits;
 
 use Cake\Utility\Hash;
 use Cake\Utility\Inflector;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use LaraTools\Utility\LaraUtil;
 
 trait ModelExtrasTrait
 {
+    protected $indexable;
 
-    protected $general = '_general';
-    protected $default = 'list';
+    protected $_indexableKey = 'list';
+
+    protected $showable;
+
+    protected $_showableKey = 'list';
 
     protected $statusColumn = 'status';
 
+    // TODO discuss
+    protected $actions = [
+        'show',
+        'edit',
+        'destroy'
+    ];
 
     /**
      * Save model with its associated data
@@ -159,8 +168,9 @@ trait ModelExtrasTrait
      * @return array|bool|mixed|string
      * @throws \Exception
      */
-    public function getListable()
+    public function getSelectOptions()
     {
+
         // if was already processed
         if (!empty($this->listable['_done'])) {
             return $this->listable;
@@ -220,7 +230,7 @@ trait ModelExtrasTrait
     public function getSortable($column = null, $group = null)
     {
         if (is_null($group)) {
-            $group = $this->default;
+            $group = $this->_indexableKey;
         }
 
         $indexable = $this->getIndexable(true);
@@ -242,56 +252,65 @@ trait ModelExtrasTrait
      * @return array
      * @throws \Exception
      */
-    public function getIndexable($full = null, $hidden = null, $group = null)
+    public function getIndexable($full = false, $hidden = true, $group = null)
+    {
+        return $this->getAbleProperty('indexable' ,$full, $hidden, $group);
+    }
+
+    public function getShowable($full = false, $hidden = true, $group = null)
+    {
+        return $this->getAbleProperty('showable' ,$full, $hidden, $group);
+    }
+
+    public function getAbleProperty($property, $full = false, $hidden = true, $group = null)
     {
         if (is_null($group)) {
-            $group = $this->default;
+            $group = $this->{'_' . $property . 'Key'};
         }
 
-        if ($full === null) {
-            $full = false;
-        }
+        $this->validatAbleProperty($property);
+        $propertyVal = $this->{$property};
 
-        if ($hidden === null) {
-            $hidden = true;
-        }
-
-        $this->validateIndexable();
-        $indexable = $this->indexable;
-
-        if (!in_array($group, array_keys($indexable))) {
-            throw new \Exception(sprintf('this "%s" group does not defined in indexable columns', $group));
+        if (!in_array($group, array_keys($propertyVal))) {
+            throw new \Exception(sprintf('this "%s" group does not defined in %s columns', $group, $property));
         }
 
         if (!$hidden) {
-            $indexable[$this->default] = Hash::extract($this->indexable[$group], '{n}[hidden=false]');
+            $propertyVal[$this->{'_' . $property . 'Key'}] = Hash::extract($this->{$property}[$group], '{n}[hidden=false]');
         }
 
         if ($full) {
-            return $indexable;
+            return $propertyVal;
         }
 
-        return array_merge([$indexable['primary_key']], Hash::extract($indexable[$group], '{n}[virtual!=true].name'));
+        return array_merge([$propertyVal['primary_key']], Hash::extract($propertyVal[$group], '{n}[virtual!=true].name'));
     }
 
     /**
-     * checks if all params are set correctly and sets defaults
+     * @param $property
+     * @return bool
+     * @throws \Exception
      */
-    protected function validateIndexable()
+    protected function validatAbleProperty($property)
     {
-        if (empty($this->indexable)) {
-            throw new \Exception('No indexable columns provided for table: ' . $this->getTable());
+
+        if (empty($this->{$property})) {
+            foreach ($this->fillable as $filed) {
+                $this->{$property}[] = ['name' => $filed];
+            }
         }
 
         // if was already validated
-        if (!empty($this->indexable['primary_key'])) {
+        if (!empty($this->{$property}['primary_key'])) {
             return true;
         }
 
-        $groups[$this->general] = [];
-        $allGroups = [$this->default];
-        // set default values
-        array_walk($this->indexable, function (&$val) use (&$groups, &$allGroups) {
+        $general = '_general';
+
+        $groups[$general] = [];
+        $allGroups = [$this->{'_' .$property .'Key'}];
+        // set _indexAbleKey values
+        array_walk($this->{$property}, function (&$val) use (&$groups, &$allGroups, $general, $property) {
             if (!array_key_exists('name', $val)) {
                 throw new \Exception('For listable columns name parameter is required');
             }
@@ -303,7 +322,7 @@ trait ModelExtrasTrait
                 $val['label'] = Inflector::humanize($val['name']);
             }
 
-            if (!array_key_exists('sortable', $val)) {
+            if ($property == 'indexable' && !array_key_exists('sortable', $val)) {
                 $val['sortable'] = false;
             }
 
@@ -326,7 +345,7 @@ trait ModelExtrasTrait
 
 
             if (!array_key_exists('group', $val)) {
-                $groups[$this->general][] = $val;
+                $groups[$general][] = $val;
                 $val['group'] = $allGroups;
             }
 
@@ -344,8 +363,8 @@ trait ModelExtrasTrait
 
             foreach ($allGroups as $group) {
                 if(in_array($group, $valGroup)) {
-                    if (empty($groups[$group]) && $groups[$this->general] != [$val]) {
-                        $groups[$group] = $groups[$this->general];
+                    if (empty($groups[$group]) && $groups[$general] != [$val]) {
+                        $groups[$group] = $groups[$general];
                     }
 
                     $groups[$group][] = $val;
@@ -353,15 +372,19 @@ trait ModelExtrasTrait
             }
         });
 
-        unset($groups[$this->general]);
+        unset($groups[$general]);
 
         // @TODO - table without PK ? list with another col ?
-        $this->indexable = [
+        $this->{$property} = [
             'primary_key' => $this->getKeyName(),
-            'table' => $this->getTable(),
+            'actions' => $this->actions,
+            'table' => $this->getTable()
         ];
-        $this->indexable = array_merge($this->indexable, $groups);
+        
+        $this->{$property} = array_merge($this->{$property}, $groups);
     }
+
+
 
     /**
      * returns the status colulmn - for using conditions with "Active"
@@ -373,5 +396,11 @@ trait ModelExtrasTrait
         return $this->statusColumn;
     }
 
-
+    /**
+     * @return array
+     */
+    public function getActions()
+    {
+        return $this->actions;
+    }
 }
