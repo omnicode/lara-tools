@@ -168,7 +168,7 @@ trait ModelExtrasTrait
      * @return array|bool|mixed|string
      * @throws \Exception
      */
-    public function getSelectOptions()
+    public function getListable()
     {
 
         // if was already processed
