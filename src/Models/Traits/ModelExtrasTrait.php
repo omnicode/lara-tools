@@ -10,9 +10,19 @@ use LaraTools\Utility\LaraUtil;
 trait ModelExtrasTrait
 {
 
+    /**
+     * @var string
+     */
     protected $general = '_general';
+
+    /**
+     * @var string
+     */
     protected $default = 'list';
 
+    /**
+     * @var string
+     */
     protected $statusColumn = 'status';
 
 
