@@ -3,7 +3,6 @@ namespace LaraTools\Models\Traits;
 
 use Cake\Utility\Hash;
 use Cake\Utility\Inflector;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use LaraTools\Utility\LaraUtil;
 
@@ -382,6 +381,5 @@ trait ModelExtrasTrait
     {
         return $this->statusColumn;
     }
-
 
 }
