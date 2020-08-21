@@ -9,7 +9,7 @@
   	* <a href="#hashPassword">hashPassword</a>
   	* <a href="#verifyPassword">verifyPassword</a>
 2. <a href="#ModelExtrasTrait">ModelExtrasTrait</a>
-	* <a href="#saveAssocited">saveAssocited</a>
+	* <a href="#saveAssocited">saveAssociated</a>
 
 
 ## <a id="LaraUtil"></a>LaraUtil
